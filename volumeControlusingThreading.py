@@ -8,7 +8,6 @@ import threading
 
 wCam, hCam = 1080, 720
 
-
 class VolumeControl:
     def __init__(self):
         self.cap = cv2.VideoCapture(0)
@@ -40,21 +39,23 @@ class VolumeControl:
             img = self.detector.findHands(img, draw=False)
             handLM = self.detector.findPosition(img)
             if len(handLM) != 0:
-                x1, y1 = handLM[4][1], handLM[4][2]
-                x2, y2 = handLM[8][1], handLM[8][2]
+                x1, y1, z1 = handLM[4][1], handLM[4][2], handLM[4][3]
+                x2, y2, z2 = handLM[8][1], handLM[8][2], handLM[8][3]
 
                 cv2.circle(img, (x1, y1), 7, (0, 255, 0), 5)
                 cv2.circle(img, (x2, y2), 7, (0, 255, 0), 5)
                 cv2.line(img, (x1, y1), (x2, y2), (0, 0, 255), 3)
 
                 length = np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+                avgZ = (z1 + z2) / 2
 
-                if length < self.minDis:
+                dynamicMinDis = np.interp(avgZ, [self.zmin, self.zmax], [self.minDis, self.maxDis])
+
+                if length < dynamicMinDis:
                     setVolume = self.vol[0]
                 else:
-                    z = (handLM[4][2] + handLM[8][2]) / 2
-                    distance = np.interp(z, [self.zmin, self.zmax], [1, 5.5])
-                    setVolume = np.interp(length * distance, [self.minDis, self.maxDis], [self.vol[0], self.vol[1]])
+                    distance = np.interp(avgZ, [self.zmin, self.zmax], [1, 5.5])
+                    setVolume = np.interp(length * distance, [dynamicMinDis, self.maxDis], [self.vol[0], self.vol[1]])
 
                 self.volPer = np.interp(setVolume, [self.vol[0], self.vol[1]], [0, 100])
                 self.volume.SetMasterVolumeLevel(setVolume, None)
@@ -68,6 +69,8 @@ class VolumeControl:
 
             cv2.putText(img, str(txt), (20, 70), cv2.FONT_HERSHEY_PLAIN, 2, (13, 149, 245), 3)
             cv2.putText(img, str(str(int(self.volPer)) + '%'), (20, 600), cv2.FONT_HERSHEY_DUPLEX, 1, (13, 149, 245), 3)
+            cv2.rectangle(img, (50, 150), (85, 600), (137, 64, 177), 3)
+            cv2.rectangle(img, (52, int(np.interp(self.volPer, [0, 100], [600, 150]))), (83, 600), (13, 149, 245), cv2.FILLED)
             cv2.imshow('Image', img)
             cv2.waitKey(1)
 
@@ -75,7 +78,6 @@ class VolumeControl:
         self.running = False
         self.cap.release()
         cv2.destroyAllWindows()
-
 
 def main():
     volume_control = VolumeControl()
@@ -88,7 +90,6 @@ def main():
     except KeyboardInterrupt:
         volume_control.stop()
         thread.join()
-
 
 if __name__ == "__main__":
     main()

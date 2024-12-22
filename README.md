@@ -34,3 +34,9 @@ python volumeControlusingThreading.py
 ## Credits
 
 This project is inspired by Murtaza Hassan, founder of the YouTube channel "Murtaza's Workshop - Robotics and AI". His tutorials were of great help in the development of this project.
+
+## Demo
+Watch the demo of the project on YouTube:
+```text
+https://youtu.be/j1HaKpBAxYw
+```
